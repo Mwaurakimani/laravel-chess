@@ -62,7 +62,7 @@ async function submitRequest() {
         <SidebarNav />
 
         <!-- Main content -->
-        <div class="min-h-screen bg-gray-50 p-6">
+        <div class="min-h-screen bg-gray-50 p-2">
             <PageHeading :heading="'Select Peer'"/>
 
             <div class="mb-6 flex space-x-4 border-b pb-2">

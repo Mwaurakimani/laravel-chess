@@ -22,7 +22,7 @@ const withdrawal = {
         <SidebarNav />
 
         <!-- Main content -->
-        <div class="min-h-screen bg-gray-50 p-6">
+        <div class="min-h-screen bg-gray-50 p-2">
             <PageHeading :heading="'Withdrawal Details'"/>
 
             <!-- Transaction Info -->

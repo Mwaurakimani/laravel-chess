@@ -36,7 +36,7 @@ const getMatchResult = (challenge: any): string => {
         <SidebarNav />
 
         <!-- Main Content -->
-        <main class="flex-1 space-y-6 p-6">
+        <main class="flex-1  p-2">
             <PageHeading :heading="'My Challenges'"/>
 
             <!-- Tabs -->

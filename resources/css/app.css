@@ -165,3 +165,9 @@
         @apply bg-background text-foreground;
     }
 }
+
+
+/*application*/
+  main{
+      @apply space-y-6;
+  }

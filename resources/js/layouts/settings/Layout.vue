@@ -20,7 +20,7 @@ const currentPath = page.props.ziggy?.location
     <div class="flex min-h-screen bg-gray-50">
         <SidebarNav />
 
-        <main class="flex-1 space-y-6 p-6">
+        <main class="flex-1  p-6">
             <h1 class="text-2xl font-bold">Settings</h1>
 
             <!-- Tabs -->

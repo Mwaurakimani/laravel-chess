@@ -15,7 +15,7 @@ const onlineUsers = ref<any[]>([]);
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 space-y-6 p-2">
+        <main class="flex-1 p-2">
             <h1 class="text-2xl font-bold">Active Users</h1>
             <p>Welcome, {{ user.name }}</p>
             <div v-if="onlineUsers.length > 0">

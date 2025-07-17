@@ -70,7 +70,7 @@ onMounted(() => {
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 p-6">
+        <main class="flex-1 p-2">
             <PageHeading heading="Match Ready" />
 
             <div class="max-w-xl space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow">

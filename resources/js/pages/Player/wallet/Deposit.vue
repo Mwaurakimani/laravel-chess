@@ -28,7 +28,7 @@ const handleDeposit = () => {
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 space-y-6 p-6">
+        <main class="flex-1  p-2">
             <PageHeading :heading="'Deposit Details'" />
             <p class="text-sm text-gray-600">Review and confirm your deposit</p>
 

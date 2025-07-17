@@ -50,7 +50,7 @@ watch(
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 p-6 space-y-6">
+        <main class="flex-1 p-2 ">
             <PageHeading :heading="'Active Challenges'" />
 
             <!-- Tabs -->

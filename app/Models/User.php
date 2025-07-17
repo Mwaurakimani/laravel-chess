@@ -28,13 +28,14 @@ class User extends Authenticatable
         "email",
         "phone",
         "password",
-        "roles",
         "balance",
         "token_balance",
         "lichess_link",
         "chess_com_link",
         "account_status",
+        "roles",
     ];
+
 
     /**
      * The attributes that should be hidden for serialization.

@@ -31,7 +31,7 @@ const match = {
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 p-6">
+        <main class="flex-1 p-2">
             <PageHeading :heading="'Match Result'"/>
 
             <div class="max-w-xl bg-white shadow border border-gray-200 rounded-lg p-6 space-y-4">

@@ -15,41 +15,41 @@ class User
 {
     protected const BASE_URL = 'https://api.chess.com/pub';
 
-    public string $avatar;
-    public int $playerId;
-    public string $apiId;            // corresponds to "@id"
-    public string $url;
-    public string $name;
-    public string $username;
-    public int $followers;
-    public string $countryUrl;
-    public Carbon $lastOnline;
-    public Carbon $joinedAt;
-    public string $status;
-    public bool $isStreamer;
-    public bool $verified;
-    public string $league;
+    public string|null $avatar;
+    public int|null $playerId;
+    public string|null $apiId;            // corresponds to "@id"
+    public string|null $url;
+    public string|null $name;
+    public string|null $username;
+    public int|null $followers;
+    public string|null $countryUrl;
+    public Carbon|null $lastOnline;
+    public Carbon|null $joinedAt;
+    public string|null $status;
+    public bool|null $isStreamer;
+    public bool|null $verified;
+    public string|null $league;
     /** @var string[] */
     public array $streamingPlatforms;
 
     private function __construct(array $data)
     {
-        $this->avatar = $data['avatar'];
-        $this->playerId = $data['player_id'];
-        $this->apiId = $data['@id'];
-        $this->url = $data['url'];
-        $this->name = $data['name'];
-        $this->username = $data['username'];
-        $this->followers = $data['followers'];
-        $this->countryUrl = $data['country'];
-        $this->lastOnline = Carbon::createFromTimestamp($data['last_online']);
-        $this->joinedAt = Carbon::createFromTimestamp($data['joined']);
-        $this->status = $data['status'];
-        $this->isStreamer = (bool)$data['is_streamer'];
-        $this->verified = (bool)$data['verified'];
-        $this->league = $data['league'];
-        $this->streamingPlatforms = $data['streaming_platforms'] ?? [];
+        $this->avatar = $data['avatar'] ?? null;
+        $this->playerId = $data['player_id'] ?? null;
+        $this->apiId = $data['@id'] ?? null;
+        $this->url = $data['url'] ?? null;
+        $this->username = $data['username'] ?? null;
+        $this->followers = $data['followers'] ?? null;
+        $this->countryUrl = $data['country'] ?? null;
+        $this->lastOnline = isset($data['last_online']) ? Carbon::createFromTimestamp($data['last_online']) : null;
+        $this->joinedAt = isset($data['joined']) ? Carbon::createFromTimestamp($data['joined']) : null;
+        $this->status = $data['status'] ?? null;
+        $this->isStreamer = isset($data['is_streamer']) ? (bool)$data['is_streamer'] : null;
+        $this->verified = isset($data['verified']) ? (bool)$data['verified'] : null;
+        $this->league = $data['league'] ?? null;
+        $this->streamingPlatforms = $data['streaming_platforms'] ?? null;
     }
+
 
     /**
      * Hydrate a User from a Chess.com API response.
@@ -90,18 +90,19 @@ class User
 
     public static function getMonthlyGames(
         UserModel $user,
-        ?int    $year       = null,
-        ?int    $month      = null,
+        ?int      $year = null,
+        ?int      $month = null,
                   $start_date = null,   // "YYYY-MM-DD" or timestamp
-                  $end_date   = null,   // "YYYY-MM-DD" or timestamp
+                  $end_date = null,   // "YYYY-MM-DD" or timestamp
                   $start_time = null,   // "HH:MM:SS"
-                  $end_time   = null    // "HH:MM:SS"
-    ): Collection {
+                  $end_time = null    // "HH:MM:SS"
+    ): Collection
+    {
         // 1) Default to current year/month in UTC
-        $now   = Carbon::now('UTC');
-        $year  = $year  ?? $now->year;
+        $now = Carbon::now('UTC');
+        $year = $year ?? $now->year;
         $month = $month ?? $now->month;
-        $mm    = str_pad((string)$month, 2, '0', STR_PAD_LEFT);
+        $mm = str_pad((string)$month, 2, '0', STR_PAD_LEFT);
 
         // 2) Fetch that month's games JSON
         $url = self::BASE_URL
@@ -141,9 +142,9 @@ class User
                 }
 
                 // pull PGN tags
-                $tagDate  = $g->tags['date']       ?? null; // "YYYY.MM.DD"
+                $tagDate = $g->tags['date'] ?? null; // "YYYY.MM.DD"
                 $tagStart = $g->tags['start_time'] ?? null; // "HH:MM:SS"
-                if (! $tagDate || ! $tagStart) {
+                if (!$tagDate || !$tagStart) {
                     // no timestamp present
                     return false;
                 }
@@ -160,7 +161,7 @@ class User
                     return false;
                 }
                 // exclude after end‐anchor
-                if ($endAnchor   && $gameDT->gt($endAnchor)) {
+                if ($endAnchor && $gameDT->gt($endAnchor)) {
                     return false;
                 }
 
@@ -168,7 +169,6 @@ class User
             })
             ->values();
     }
-
 
 
 }

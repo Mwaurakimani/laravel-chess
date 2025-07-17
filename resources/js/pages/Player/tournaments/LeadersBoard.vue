@@ -24,7 +24,7 @@ const leaderboardData = {
     <div class="flex min-h-screen bg-gray-50">
         <SidebarNav />
 
-        <main class="flex-1 p-6 space-y-6">
+        <main class="flex-1 p-6 ">
             <PageHeading :heading="'Leaderboard'"/>
 
             <p class="text-sm text-gray-600">Top players based on wins and stake</p>

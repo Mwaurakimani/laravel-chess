@@ -61,7 +61,7 @@ const handleContend = () => {
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 p-6">
+        <main class="flex-1 p-2">
             <div class="w-full max-w-md space-y-4">
                 <PageHeading :heading="'Challenge Details'" />
 

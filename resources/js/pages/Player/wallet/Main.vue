@@ -29,7 +29,7 @@ const currentTab = ref<'tokens' | 'matches' | 'deposits'>('tokens');
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 space-y-6 p-6">
+        <main class="flex-1  p-2">
             <PageHeading :heading="'Wallet'" />
 
             <!-- Dark Balance Banner -->

@@ -5,7 +5,13 @@ namespace Database\Seeders;
 use App\Models\User;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Seeders\ChallengeSeeder\ChallengeSeeder;
+use Database\Seeders\ChessMatchesResults\ChessMatchesResultsSeeder;
+use Database\Seeders\Platforms\PlatformSeeder;
+use Database\Seeders\Roles\RoleSeeder;
+use Database\Seeders\users\UsersSeeder;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -15,35 +21,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            RoleSeeder::class,
-            PlatformSeeder::class,
-        ]);
-        $this->initUsers();
+        DB::transaction(function () {
+            $this->call([
+                RoleSeeder::class,
+                PlatformSeeder::class,
+                UsersSeeder::class,
+                ChallengeSeeder::class,
+//                ChessMatchesResultsSeeder::class
+            ]);
+        });
     }
 
-    public function initUsers(): void
-    {
-        $users = [];
-
-        // Create 10 users
-        for ($i = 1; $i <= 10; $i++) {
-            $users[] = [
-                'name'           => "User $i",
-                'email'          => "user$i@example.com",
-                'phone'          => '2547' . rand(10000000, 99999999),
-                'password'       => Hash::make('password'),
-                'balance'        => rand(1000, 10000),
-                'token_balance'  => rand(20, 200),
-                'lichess_link'   => "user$i",
-                'chess_com_link' => "user$i",
-                'account_status' => 'active',
-                'roles'          => json_encode($i <= 3 ? ['moderator'] : ['player']),
-                'created_at'     => now(),
-                'updated_at'     => now(),
-            ];
-        }
-
-        User::insert($users);
-    }
 }

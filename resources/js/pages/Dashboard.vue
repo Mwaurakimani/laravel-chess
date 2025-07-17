@@ -16,7 +16,7 @@ const recentMatches = props.recentMatches;
         <SidebarNav />
 
         <!-- Main content -->
-        <main class="flex-1 space-y-6 p-4 pb-6">
+        <main class="flex-1  p-4 pb-4">
             <PageHeading :heading="'Your Dashboard'"/>
             <p>Welcome, {{ user.name }}</p>
 
