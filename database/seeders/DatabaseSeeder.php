@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
                 RoleSeeder::class,
                 PlatformSeeder::class,
                 UsersSeeder::class,
-                ChallengeSeeder::class,
+//                ChallengeSeeder::class,
 //                ChessMatchesResultsSeeder::class
             ]);
         });
