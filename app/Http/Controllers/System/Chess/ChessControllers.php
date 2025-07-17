@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\System\Chess;
 
-use App\Classes\Chess\Game;
 use App\Classes\Chess\GameExtractor;
 use App\Classes\Chess\User;
 use App\Http\Controllers\ChallengeController;
@@ -12,10 +11,8 @@ use App\Models\ChessMatchesResults;
 use App\Models\User as UserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class ChessControllers extends Controller
 {
@@ -78,6 +75,9 @@ class ChessControllers extends Controller
             );
 
             if ($alreadyExists) {
+                $challenge->challenge_status = 'anomaly';
+                $challenge->save();
+                Log::error('Disputed Match: '.$challenge->id);
                 return json_encode(['exists' => true]);
             }
 

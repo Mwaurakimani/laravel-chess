@@ -67,7 +67,7 @@ onMounted(() => {
                         <p class="font-medium">{{ note.title }}</p>
                         <p class="text-xs text-gray-500">{{ note.message }}</p>
                     </div>
-                    <span class="text-xs text-gray-400">{{ note.timestamp }}</span>
+<!--                    <span class="text-xs text-gray-400">{{ note }}</span>-->
                 </div>
             </div>
 

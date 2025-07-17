@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\ChallengeAcceptedNow;
+use App\Http\Controllers\System\Chess\ChessControllers;
 use App\Models\Challenge;
 use App\Models\ChessMatchesResults;
 use App\Models\Platform;
@@ -379,13 +380,16 @@ class ChallengeController extends Controller
         $user = Auth::user();
         $challenge = Challenge::with(['user', 'opponent'])->findOrFail($id);
 
-        dump($challenge->user->chess_com_link);
-        dd($challenge->opponent->chess_com_link);
-
         // Restrict access to only participants
         if ($challenge->user_id !== $user->id && $challenge->opponent_id !== $user->id) {
             abort(403, 'Unauthorized access to this match result.');
         }
+
+        if ($challenge->challenge_status == 'pending'){
+            (new ChessControllers())->getChallengeResult($request,$challenge);
+        }
+
+        $challenge->refresh();
 
         // Determine result for logged-in user
         $status = $challenge->challenge_status; // e.g., won, loss, draw, anomaly
@@ -396,7 +400,7 @@ class ChallengeController extends Controller
             'anomaly', 'canceled' => 'canceled',
             'won' => $loggedInIsChallenger ? 'win' : 'loss',
             'loss' => $loggedInIsChallenger ? 'loss' : 'win',
-            default => 'canceled',
+            default => 'anomaly',
         };
 
         return Inertia::render('Player/matches/MatchResults', [

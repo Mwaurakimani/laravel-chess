@@ -50,7 +50,7 @@ class NotificationsController extends Controller
             'title'       => $request->title,
             'message'     => $request->message,
             'type'        => $request->type,
-            'timestamp'   => now()->diffForHumans(),
+            'timestamp'   => now(),
             'details'     => $request->details,
             'routeName'   => $request->routeName ?? null,
             'routeParams' => $request->routeParams ?? null,

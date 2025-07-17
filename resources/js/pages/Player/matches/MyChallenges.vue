@@ -77,6 +77,7 @@ const getMatchResult = (challenge: any): string => {
                             <template v-else-if="challenge.opponent"> @{{ challenge.opponent?.name }} </template>
                             <template v-else> No opponent </template>
                         </p>
+                        <p class="text-sm text-gray-600">id : {{ challenge.id }}</p>
                         <p class="text-sm text-gray-600">Tokens 🎟️· {{ challenge.tokens }}</p>
                         <p class="text-sm text-gray-600">Stake: KES {{ challenge.stake }}</p>
                         <p class="text-sm text-gray-500">Time Control: {{ challenge.time_control }}</p>
