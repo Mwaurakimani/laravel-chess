@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\ChallengeAcceptedNow;
 use App\Models\Challenge;
+use App\Models\ChessMatchesResults;
 use App\Models\Platform;
 use App\Models\Transaction;
 use App\Models\User;
@@ -11,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Validation\ValidationException;
@@ -126,12 +128,12 @@ class ChallengeController extends Controller
             // 5) Notify the original challenger (creator)
             $creator = $challenge->user;
             $creatorNotif = Request::create('/notifications', 'POST', [
-                'title'       => '📣 Your Challenge Was Accepted',
-                'message'     => "@{$user->name} accepted your challenge #{$challenge->id}.",
-                'type'        => 'match',
-                'routeName'   => 'matches.challenge-details',
+                'title' => '📣 Your Challenge Was Accepted',
+                'message' => "@{$user->name} accepted your challenge #{$challenge->id}.",
+                'type' => 'match',
+                'routeName' => 'matches.challenge-details',
                 'routeParams' => ['id' => $challenge->id],
-                'details'     => "Stake: KES {$challenge->stake}\nTokens used by opponent: {$requiredTokens}",
+                'details' => "Stake: KES {$challenge->stake}\nTokens used by opponent: {$requiredTokens}",
             ]);
             $creatorNotif->setUserResolver(fn() => $creator);
             app(NotificationsController::class)->store($creatorNotif);
@@ -152,20 +154,72 @@ class ChallengeController extends Controller
     /**
      * @throws ValidationException
      */
-    public function get_results(Request $request, $id): RedirectResponse
+    public function get_results(Request $request, Challenge $challenge, ?ChessMatchesResults $match): RedirectResponse
     {
-        $challenge = Challenge::findOrFail($id);
+        // Only proceed if we haven’t already set a final status
+        if (! in_array($challenge->challenge_status, ['won','loss','draw','anomaly'])) {
 
-        if (!in_array($challenge->challenge_status, ['won', 'loss', 'draw', 'anomaly'])) {
-            $this->resolveMatchAndTransferStake($request, $id, 'challenger');
+            $challengerLink = strtolower($challenge->user->chess_com_link);
+            $opponentLink   = strtolower($challenge->opponent->chess_com_link);
+
+            // --- 1) figure out which color actually won ---
+            if ($match->white_result === 'win' && in_array($match->black_result, ['checkmated','timeout'])) {
+                $winnerColor = 'white';
+            }
+            elseif ($match->black_result === 'win' && in_array($match->white_result, ['checkmated','timeout'])) {
+                $winnerColor = 'black';
+            }
+            elseif ($match->white_result === 'stalemate' && $match->black_result === 'stalemate') {
+                $winnerColor = 'draw';
+            }
+            else {
+                // something unexpected — mark anomaly
+                Log::error("Challenge #{$challenge->id} yielded unexpected results: "
+                    . "{$match->white_result}/{$match->black_result}");
+                $challenge->update(['challenge_status' => 'anomaly']);
+                return redirect()->back();
+            }
+
+            // --- 2) pick the actual winner username (or null on draw) ---
+            if ($winnerColor === 'white') {
+                $winnerUsername = strtolower($match->white);
+            }
+            elseif ($winnerColor === 'black') {
+                $winnerUsername = strtolower($match->black);
+            }
+            else {
+                $winnerUsername = null; // draw
+            }
+
+            // --- 3) map that back to challenger vs opponent vs draw ---
+            if ($winnerColor === 'draw') {
+                $who = 'draw';
+            }
+            elseif ($winnerUsername === $challengerLink) {
+                $who = 'challenger';
+            }
+            elseif ($winnerUsername === $opponentLink) {
+                $who = 'contender';
+            }
+            else {
+                // Neither link matches — anomaly
+                Log::error("Challenge #{$challenge->id}: winning user '{$winnerUsername}' "
+                    . "didn’t match challenger '{$challengerLink}' or opponent '{$opponentLink}'");
+                $challenge->update(['challenge_status' => 'anomaly']);
+                return redirect()->back();
+            }
+
+            // --- 4) resolve stakes and mark status ---
+            $this->resolveMatchAndTransferStake($request, $challenge, $who);
         }
 
-        return redirect()->route('matches.results', [$id]);
+        return redirect()->route('challenges.show', $challenge);
     }
 
-    public function resolveMatchAndTransferStake(Request $request, $challengeId, $winnerRole): JsonResponse
+
+    public function resolveMatchAndTransferStake(Request $request, Challenge $challenge, $winnerRole): JsonResponse
     {
-        $validRoles = ['challenger', 'contender'];
+        $validRoles = ['challenger', 'contender','draw'];
         if (!in_array($winnerRole, $validRoles)) {
             throw ValidationException::withMessages([
                 'winner' => 'Invalid winner role. Must be either challenger or contender.'
@@ -173,12 +227,12 @@ class ChallengeController extends Controller
         }
 
         $challenge = Challenge::with(['user', 'opponent'])
-            ->where('id', $challengeId)
+            ->where('id', $challenge->id)
             ->where('request_state', 'accepted')
             ->firstOrFail();
 
         $challenger = $challenge->user;
-        $contender   = $challenge->opponent;
+        $contender = $challenge->opponent;
 
         if (!$contender) {
             throw ValidationException::withMessages([
@@ -186,13 +240,49 @@ class ChallengeController extends Controller
             ]);
         }
 
+        // DRAW case: no money moves, just mark and notify
+        if ($winnerRole === 'draw') {
+            DB::transaction(function () use ($challenge, $challenger, $contender) {
+                $challenge->challenge_status = 'draw';
+                $challenge->save();
+
+                // Notify challenger
+                $drawNotif1 = Request::create('/notifications', 'POST', [
+                    'title'       => '🤝 It’s a Draw',
+                    'message'     => "Challenge #{$challenge->id} ended in a draw. No stakes were moved.",
+                    'type'        => 'match',
+                    'routeName'   => 'matches.results',
+                    'routeParams' => ['id' => $challenge->id],
+                    'details'     => "Your balance remains unchanged."
+                ]);
+                $drawNotif1->setUserResolver(fn() => $challenger);
+                app(NotificationsController::class)->store($drawNotif1);
+
+                // Notify contender
+                $drawNotif2 = Request::create('/notifications', 'POST', [
+                    'title'       => '🤝 It’s a Draw',
+                    'message'     => "Challenge #{$challenge->id} ended in a draw. No stakes were moved.",
+                    'type'        => 'match',
+                    'routeName'   => 'matches.results',
+                    'routeParams' => ['id' => $challenge->id],
+                    'details'     => "Your balance remains unchanged."
+                ]);
+                $drawNotif2->setUserResolver(fn() => $contender);
+                app(NotificationsController::class)->store($drawNotif2);
+            });
+
+            return response()->json([
+                'message' => "Match resolved as draw for challenge #{$challenge->id}; no balance changes."
+            ]);
+        }
+
         $winner = $winnerRole === 'challenger' ? $challenger : $contender;
-        $loser  = $winnerRole === 'challenger' ? $contender  : $challenger;
+        $loser = $winnerRole === 'challenger' ? $contender : $challenger;
 
         DB::transaction(function () use ($challenge, $winner, $loser, $winnerRole) {
             // 1) Credit winner & debit loser
             $winner->balance += $challenge->stake;
-            $loser->balance  -= $challenge->stake;
+            $loser->balance -= $challenge->stake;
             $winner->save();
             $loser->save();
 
@@ -202,64 +292,64 @@ class ChallengeController extends Controller
 
             // 3) Log credit transaction
             Transaction::create([
-                'request_type'                => 'stake_win_credit',
-                'request_id'                  => $challenge->id,
-                'transaction_origin'          => $loser->id,
-                'transaction_destination'     => $winner->id,
-                'amount'                      => $challenge->stake,
-                'currency'                    => 'KES',
-                'delivery_confirmation_status'=> true,
-                'transaction_stage'           => 'completed',
-                'confirmation_status'         => true,
+                'request_type' => 'stake_win_credit',
+                'request_id' => $challenge->id,
+                'transaction_origin' => $loser->id,
+                'transaction_destination' => $winner->id,
+                'amount' => $challenge->stake,
+                'currency' => 'KES',
+                'delivery_confirmation_status' => true,
+                'transaction_stage' => 'completed',
+                'confirmation_status' => true,
                 'transaction_complete_status' => true,
-                'transaction_notes'           => json_encode([
-                    'note'         => "Stake credited to {$winnerRole} (user_id={$winner->id}) for challenge #{$challenge->id}",
+                'transaction_notes' => json_encode([
+                    'note' => "Stake credited to {$winnerRole} (user_id={$winner->id}) for challenge #{$challenge->id}",
                     'challenge_id' => $challenge->id,
-                    'role'         => $winnerRole,
-                    'action'       => 'credit'
+                    'role' => $winnerRole,
+                    'action' => 'credit'
                 ]),
             ]);
 
             // 4) Log debit transaction
             Transaction::create([
-                'request_type'                => 'stake_loss_debit',
-                'request_id'                  => $challenge->id,
-                'transaction_origin'          => $loser->id,
-                'transaction_destination'     => $winner->id,
-                'amount'                      => -$challenge->stake,
-                'currency'                    => 'KES',
-                'delivery_confirmation_status'=> true,
-                'transaction_stage'           => 'completed',
-                'confirmation_status'         => true,
+                'request_type' => 'stake_loss_debit',
+                'request_id' => $challenge->id,
+                'transaction_origin' => $loser->id,
+                'transaction_destination' => $winner->id,
+                'amount' => -$challenge->stake,
+                'currency' => 'KES',
+                'delivery_confirmation_status' => true,
+                'transaction_stage' => 'completed',
+                'confirmation_status' => true,
                 'transaction_complete_status' => true,
-                'transaction_notes'           => json_encode([
-                    'note'         => "Stake debited from loser (user_id={$loser->id}) for challenge #{$challenge->id}",
+                'transaction_notes' => json_encode([
+                    'note' => "Stake debited from loser (user_id={$loser->id}) for challenge #{$challenge->id}",
                     'challenge_id' => $challenge->id,
-                    'role'         => $winnerRole === 'challenger' ? 'contender' : 'challenger',
-                    'action'       => 'debit'
+                    'role' => $winnerRole === 'challenger' ? 'contender' : 'challenger',
+                    'action' => 'debit'
                 ]),
             ]);
 
             // 5) Notify the winner
             $winNotif = Request::create('/notifications', 'POST', [
-                'title'       => '🎉 You Won!',
-                'message'     => "Congratulations—you won challenge #{$challenge->id} and earned KES {$challenge->stake}!",
-                'type'        => 'match',
-                'routeName'   => 'matches.results',
+                'title' => '🎉 You Won!',
+                'message' => "Congratulations—you won challenge #{$challenge->id} and earned KES {$challenge->stake}!",
+                'type' => 'match',
+                'routeName' => 'matches.results',
                 'routeParams' => ['id' => $challenge->id],
-                'details'     => "Stake won: KES {$challenge->stake}\nTokens risked: {$challenge->tokens}",
+                'details' => "Stake won: KES {$challenge->stake}\nTokens risked: {$challenge->tokens}",
             ]);
             $winNotif->setUserResolver(fn() => $winner);
             app(NotificationsController::class)->store($winNotif);
 
             // 6) Notify the loser
             $loseNotif = Request::create('/notifications', 'POST', [
-                'title'       => '😞 You Lost',
-                'message'     => "Challenge #{$challenge->id} was lost. Better luck next time!",
-                'type'        => 'match',
-                'routeName'   => 'matches.results',
+                'title' => '😞 You Lost',
+                'message' => "Challenge #{$challenge->id} was lost. Better luck next time!",
+                'type' => 'match',
+                'routeName' => 'matches.results',
                 'routeParams' => ['id' => $challenge->id],
-                'details'     => "Stake lost: KES {$challenge->stake}\nTokens risked: {$challenge->tokens}",
+                'details' => "Stake lost: KES {$challenge->stake}\nTokens risked: {$challenge->tokens}",
             ]);
             $loseNotif->setUserResolver(fn() => $loser);
             app(NotificationsController::class)->store($loseNotif);

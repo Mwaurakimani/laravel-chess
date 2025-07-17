@@ -17,7 +17,7 @@ Route::get('/', function () {
     return redirect('login');
 })->name('home');
 
-Route::get('/fetch-results', [ChessControllers::class,'entry'])->name('test');
+Route::get('/fetch-results/{challenge}', [ChessControllers::class,'getChallengeResult'])->name('test');
 
 Route::get('dashboard',[DashboardController::class,'index'])
     ->middleware(['auth', 'verified'])
@@ -87,7 +87,7 @@ Route::middleware(['auth', 'verified'])->prefix('matches')->name('matches.')->gr
 
     Route::get('ready/{id}', [ChallengeController::class,'ready'])->name('ready');
 
-    Route::get('get-results/{id}',[ChallengeController::class,'get_results'] )->name('get-results');
+    Route::get('get-results/{challenge}',[ChallengeController::class,'get_results'] )->name('get-results');
 
     Route::get('results/{id}', [ChallengeController::class,'show_results'])->name('results');
 
