@@ -97,11 +97,11 @@
 import { useForm } from '@inertiajs/vue3';
 
 const form = useForm({
-    name: 'mwauar',
-    email: 'kimmwaus@gmail.com',
-    password: 'password',
-    phone:'254719445697',
-    password_confirmation: 'password',
+    name: '',
+    email: '',
+    password: '',
+    phone:'',
+    password_confirmation: '',
 });
 
 const submit = () => {
