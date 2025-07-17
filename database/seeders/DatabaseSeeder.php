@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             $this->call([
                 RoleSeeder::class,
                 PlatformSeeder::class,
-                UsersSeeder::class,
+//                UsersSeeder::class,
 //                ChallengeSeeder::class,
 //                ChessMatchesResultsSeeder::class
             ]);
