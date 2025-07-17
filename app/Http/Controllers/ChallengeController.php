@@ -418,8 +418,17 @@ class ChallengeController extends Controller
     {
         // 1. Validate input
         $validated = $request->validate([
-            'stake' => 'required|numeric|min:10',
-            'platform' => 'required|exists:platforms,name',
+            'stake'       => 'required|numeric|min:10',
+            'platform'    => [
+                'required',
+                'exists:platforms,name',
+                // custom rule to ensure the user has a chess_com_link
+                function ($attribute, $value, $fail) {
+                    if (! optional(auth()->user())->chess_com_link) {
+                        $fail('You must add your Chess.com link to your profile before choosing a platform.');
+                    }
+                },
+            ],
             'timeControl' => 'required|string',
         ]);
 
