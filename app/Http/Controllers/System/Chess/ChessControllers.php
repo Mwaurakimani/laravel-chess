@@ -84,8 +84,6 @@ class ChessControllers extends Controller
 // otherwise it's a brand-new record, so keep going:
             (new ChallengeController())->get_results($request, $challenge, $match);
 
-
-
         } catch (\Exception $e) {
             //log response
             Log::error($e->getMessage() . ':' . $challenge->id);

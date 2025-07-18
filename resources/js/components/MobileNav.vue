@@ -13,9 +13,9 @@ const isActive = (routeName: string) => {
 <template>
     <nav class="fixed right-0 bottom-0 left-0 z-50 flex justify-around border-t bg-white py-3 shadow md:hidden">
 
-        <Link :href="route('dashboard')" class="flex flex-col items-center text-gray-600 hover:text-blue-600">
+        <a :href="route('dashboard')" class="flex flex-col items-center text-gray-600 hover:text-blue-600">
             <Home class="h-6 w-6" :class="{ 'text-blue-600': isActive('dashboard') }" />
-        </Link>
+        </a>
 
         <Link :href="route('matches.active')" class="flex flex-col items-center text-gray-600 hover:text-blue-600">
             <Joystick class="h-6 w-6" :class="{ 'text-blue-600': isActive('matches') }" />

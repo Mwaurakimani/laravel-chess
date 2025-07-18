@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use App\Http\Controllers\PresenceController;
+
 
 
 Route::get('/', function () {
@@ -81,9 +83,7 @@ Route::middleware(['auth', 'verified'])->prefix('matches')->name('matches.')->gr
 
     Route::get('create-challenge', [ChallengeController::class,'create_challenge'])->name('create-challenge');
 
-    Route::get('edit-challenge/{id}', function () {
-        return Inertia::render('Player/matches/EditChallenge');
-    })->name('edit-challenge');
+    Route::get('edit-challenge/{id}', fn() => Inertia::render('Player/matches/EditChallenge'))->name('edit-challenge');
 
     Route::get('ready/{id}', [ChallengeController::class,'ready'])->name('ready');
 
@@ -178,6 +178,12 @@ Route::middleware(['auth', 'verified'])->prefix('challenges')->name('challenges.
 Route::middleware(['auth', 'verified'])->prefix('wallet_request')->name('wallet_request.')->group(function () {
     Route::post('/create',[WalletController::class,'request'])->name('create');
 });
+
+
+Route::post('/chess-online-status', [PresenceController::class, 'chessOnline'])
+    ->name('api.chess-online-status')
+    ->middleware(['auth', 'verified']);
+
 
 
 

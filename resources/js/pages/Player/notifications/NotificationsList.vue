@@ -50,7 +50,7 @@ onMounted(() => {
         <SidebarNav />
 
         <!-- Main content -->
-        <div class="min-h-screen bg-gray-50 p-2">
+        <div class="w-full bg-gray-50 p-2">
             <PageHeading :heading="'Notifications'"/>
 
 
@@ -74,10 +74,10 @@ onMounted(() => {
             <!-- Notification Detail Modal -->
             <div
                 v-if="selectedNotification"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 "
                 @click.self="closeNotification"
             >
-                <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+                <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg mx-3">
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-lg font-semibold">{{ selectedNotification.title }}</p>

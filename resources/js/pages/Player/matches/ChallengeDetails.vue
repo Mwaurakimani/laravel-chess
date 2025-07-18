@@ -120,7 +120,7 @@ const handleContend = () => {
 
                         <!-- Contend Button -->
                         <button
-                            v-if="!isOwner && challenge.online && !gameIsPlayed"
+                            v-if="!isOwner && challenge.online && !gameIsPlayed && (challenge.request_state != 'accepted')"
                             @click.prevent="handleContend"
                             class="rounded bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                         >

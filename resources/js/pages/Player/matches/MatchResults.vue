@@ -5,7 +5,7 @@ import { Link } from '@inertiajs/vue3';
 import PageHeading from '@/components/PageHeading.vue';
 
 const props = defineProps<{
-    result: 'win' | 'loss' | 'draw' | 'canceled';
+    result: 'win' | 'loss' | 'draw' | 'canceled' | 'anomaly';
     opponent: string;
     tokens: number;
     winnings: number;
@@ -67,10 +67,27 @@ const match = {
                     </div>
                 </div>
 
+                <div v-else-if="result === 'anomaly'" class="text-gray-600 font-semibold text-sm">
+                    ⚠️ Match Anomaly
+                    <div class="text-gray-700 text-sm">
+                        There was a problem retrieving your match results. No worries, please reach out to us on WhatsApp and we’ll help you resolve this. Thank you for being patient.
+                        <br>
+                        <a
+                            href="https://wa.me/254719445697"
+                            target="_blank"
+                            class="text-green-600 hover:underline"
+                        >
+                            Chat with us on WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+
                 <!-- Common Details -->
                 <div v-if="result !== 'canceled'" class="text-sm text-gray-700 pt-3">
                     <p><strong>Tokens Used:</strong> {{ match.tokens }}</p>
                     <p v-if="result === 'win'"><strong>Winnings:</strong> KES {{ match.winnings }}</p>
+                    <p v-if="result === 'anomaly'"><strong>Stake:</strong> KES {{ match.winnings }}</p>
                     <p><strong>Time Control:</strong> {{ match.timeControl }}</p>
                 </div>
 

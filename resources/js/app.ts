@@ -40,7 +40,9 @@ createInertiaApp({
         // ————————————————————————————————————————————————————————————
 
         const page = usePage<{ auth: { user: { id: number } | null } }>()
+
         if (page.props.auth.user) {
+
             initPresence()
 
             const userId = page.props.auth.user.id
@@ -50,6 +52,7 @@ createInertiaApp({
                     alert(payload.message)
                     window.location.href = route('matches.ready', payload.challenge_id)
                 })
+
         }
 
         // ————————————————————————————————————————————————————————————
