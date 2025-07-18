@@ -14,10 +14,10 @@ const isActive = (routeName: string) => {
             <h2 class="text-lg font-semibold">Dashboard</h2>
             <ul class="space-y-2">
                 <li class="px-1 py-2">
-                    <Link :href="route('dashboard')" class="flex space-x-1" :class="{ 'text-blue-400': isActive('dashboard') }">
+                    <a :href="route('dashboard')" class="flex space-x-1" :class="{ 'text-blue-400': isActive('dashboard') }">
                         <Home class="h-6 w-6" :class="{ 'text-blue-600': isActive('dashboard') }" />
                         <span>Dashboard</span>
-                    </Link>
+                    </a>
                 </li>
                 <li class="px-1 py-2">
                     <Link :href="route('matches.active')" class="flex space-x-1" :class="{ 'text-blue-400': isActive('matches') }">
