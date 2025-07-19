@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Classes\Chess;
+namespace App\Classes\Chess\PlatformObjects;
 
 class Player
 {

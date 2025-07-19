@@ -1,194 +1,120 @@
 <?php
 
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\ChallengeController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\NotificationsController;
-use App\Http\Controllers\System\Chess\ChessControllers;
-use App\Http\Controllers\WalletController;
-use App\Http\Controllers\WithdrawalRequestController;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\System\Chess\ChessControllers;
+use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\WalletController;
+use App\Http\Controllers\WithdrawalRequestController;
 use App\Http\Controllers\PresenceController;
+use Illuminate\Http\Request;
 
 
+// public/home
+Route::get('/', fn() => redirect()->route('login'))->name('home');
 
-Route::get('/', function () {
-    return redirect('login');
-})->name('home');
-
-Route::get('/fetch-results/{challenge}', [ChessControllers::class,'getChallengeResult'])->name('test');
-
-Route::get('dashboard',[DashboardController::class,'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
-
-Route::get('active-users',function (){
-    return Inertia::render('ActiveUsers',[
-        'user' => request()->user()
-    ]);
-})
-    ->middleware(['auth', 'verified'])
-    ->name('active-users');
-
-Route::middleware('auth')->group(function () {
-    Route::post('/auth/users/online', function (Request $request) {
-        $user = $request->user(); // ✅ use logged-in user, not payload
-        $user->is_online = true;
-        $user->last_seen_at = now();
-        $user->save();
-
-        return response()->json(['status' => 'updated']);
-    });
-
-    Route::post('/auth/users/offline', function (Request $request) {
-        $user = $request->user();
-        $user->is_online = false;
-        $user->last_seen_at = now();
-        $user->save();
-
-        return response()->json(['status' => 'updated']);
-    });
-
-    Route::get('active-user', [USerController::class, 'activeUser'])
-        ->middleware(['auth', 'verified'])
-        ->name('active-user');
-});
-
-// Player Global Routes
+// Dashboard
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('help-and-support', function () {
-        return Inertia::render('Player/global/HelpAndSupport');
-    })->name('help-and-support');
-
-    Route::get('privacy-policy', function () {
-        return Inertia::render('Player/global/PrivacyPolicy');
-    })->name('privacy-policy');
-
-    Route::get('terms-and-conditions', function () {
-        return Inertia::render('Player/global/TermsAndConditions');
-    })->name('terms-and-conditions');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
-
-// Player Matches Routes
-Route::middleware(['auth', 'verified'])->prefix('matches')->name('matches.')->group(function () {
-    Route::get('/', [ChallengeController::class,'index'])->name('active');
-
-    Route::get('my-challenges',[ChallengeController::class,'my_matches'] )->name('my-challenges');
-
-    Route::get('challenge/{id}', [ChallengeController::class,'show'])->name('challenge-details');
-
-    Route::get('create-challenge', [ChallengeController::class,'create_challenge'])->name('create-challenge');
-
-    Route::get('edit-challenge/{id}', fn() => Inertia::render('Player/matches/EditChallenge'))->name('edit-challenge');
-
-    Route::get('ready/{id}', [ChallengeController::class,'ready'])->name('ready');
-
-    Route::get('get-results/{challenge}',[ChallengeController::class,'get_results'] )->name('get-results');
-
-    Route::get('results/{id}', [ChallengeController::class,'show_results'])->name('results');
-
-    Route::post('create-challenge', [ChallengeController::class,'store_challenge'])->name('store-challenge');
-
-    Route::post('get-active-matches', [ChallengeController::class,'get_active_matches'])->name('get-active-matches');
-
-    Route::post('game-created/{challenge}', [ChallengeController::class,'game_created'])->name('game-created');
-
-    Route::post('opponent-joined/{challenge}', [ChallengeController::class,'opponent_joined'])->name('opponent-joined');
+// Online presence endpoints
+Route::middleware(['auth'])->prefix('auth/users')->group(function () {
+    Route::post('online', fn(Request $r) => tap($r->user())->update(['is_online' => true, 'last_seen_at' => now()])->only('status'));
+    Route::post('offline', fn(Request $r) => tap($r->user())->update(['is_online' => false, 'last_seen_at' => now()])->only('status'));
+    Route::get('active', [UserController::class, 'activeUser'])->name('active-user');
 });
 
-
+// Matches
 Route::middleware(['auth', 'verified'])
-    ->prefix('notifications')
-    ->name('notifications.')
-    ->group(function () {
+     ->prefix('matches')
+     ->name('matches.')
+     ->controller(ChallengeController::class)
+     ->group(function () {
+         Route::get('/', 'index')->name('active');
+         Route::get('my-challenges', 'my_matches')->name('my-challenges');
+         Route::get('challenge/{id}', 'show')->name('challenge-details');
+         Route::get('create-challenge', 'create_challenge')->name('create-challenge');
+         Route::get('edit-challenge/{id}', fn() => Inertia::render('Player/matches/EditChallenge'))->name('edit-challenge');
+         Route::get('ready/{id}', 'ready')->name('ready');
+         Route::get('get-results/{challenge}', 'get_results')->name('get-results');
+         Route::get('results/{id}', 'show_results')->name('results');
 
-        // 1. Inertia page
-        Route::get('/', function () {
-            return Inertia::render('Player/notifications/NotificationsList');
-        })->name('list');
+         Route::post('store-challenge', 'store_challenge')->name('store-challenge');
+         Route::post('get-active-matches', 'get_active_matches')->name('get-active-matches');
+         Route::post('game-created/{challenge}', 'game_created')->name('game-created');
+         Route::post('opponent-joined/{challenge}', 'opponent_joined')->name('opponent-joined');
+     })
+;
 
-        // 2. JSON API: fetch all notifications for current user
-        Route::get('/all', [NotificationsController::class, 'index'])
-            ->name('all');
+// Fetch a single challenge result (external)
+Route::get('/fetch-results/{challenge}', [ChessControllers::class, 'getChallengeResult'])->name('test');
 
-        // 3. JSON API: store a new notification
-        Route::post('/', [NotificationsController::class, 'store'])
-            ->name('store');
-    });
+// Notifications (list page + API)
+Route::middleware(['auth', 'verified'])
+     ->prefix('notifications')
+     ->name('notifications.')
+     ->group(function () {
+         Route::view('/', 'Player/notifications/NotificationsList')->name('list');
+         Route::get('all', [NotificationsController::class, 'index'])->name('all');
+         Route::post('/', [NotificationsController::class, 'store'])->name('store');
+     })
+;
 
+// Profile
+Route::middleware(['auth', 'verified'])
+     ->prefix('profile')
+     ->name('player-profile.')
+     ->group(function () {
+         Route::view('/', 'Player/profile/View')->name('view');
+         Route::view('edit', 'Player/profile/Edit')->name('edit');
+     })
+;
 
-// Player Profile Routes
-Route::middleware(['auth', 'verified'])->prefix('profile')->name('player-profile.')->group(function () {
-    Route::get('/', function () {
-        return Inertia::render('Player/profile/View');
-    })->name('view');
+// Tournaments
+Route::middleware(['auth', 'verified'])
+     ->prefix('tournaments')
+     ->name('tournaments.')
+     ->group(function () {
+         Route::view('leaderboard', 'Player/tournaments/LeadersBoard')->name('leaderboard');
+     })
+;
 
-    Route::get('edit', function () {
-        return Inertia::render('Player/profile/Edit');
-    })->name('edit');
-});
+// Wallet
+Route::middleware(['auth', 'verified'])
+     ->prefix('wallet')
+     ->name('wallet.')
+     ->group(function () {
+         Route::get('/', [WalletController::class, 'main'])->name('main');
+         Route::get('active-peers', [WalletController::class, 'index'])->name('active-peers');
+         Route::view('deposit', 'Player/wallet/Deposit')->name('deposit');
+         Route::view('deposit/{id}', 'Player/wallet/DepositDetails')->name('deposit-details');
+         Route::get('withdrawal/{id}', [WithdrawalRequestController::class, 'view'])->name('withdrawal-details');
+         Route::view('withdrawal-request/{id}', 'Player/wallet/WithdrawalRequest')->name('withdrawal-request');
+         Route::post('withdrawal/{id}/confirm', [WithdrawalRequestController::class, 'confirmReceipt'])->name('withdrawal-confirm');
+         Route::post('withdrawal/{id}/mark-sent', [WithdrawalRequestController::class, 'markAsSent'])->name('withdrawal-mark-sent');
+         Route::post('buy-tokens', [WalletController::class, 'buyTokens'])->name('buy-tokens');
+     })
+;
 
-// Player Tournaments Routes
-Route::middleware(['auth', 'verified'])->prefix('tournaments')->name('tournaments.')->group(function () {
-    Route::get('leaderboard', function () {
-        return Inertia::render('Player/tournaments/LeadersBoard');
-    })->name('leaderboard');
-});
+// Contend a challenge
+Route::middleware(['auth', 'verified'])->post('challenges/contend', [ChallengeController::class, 'contend'])->name('challenges.contend');
 
-// Player Wallet Routes
-Route::middleware(['auth', 'verified'])->prefix('wallet')->name('wallet.')->group(function () {
-    Route::get('/',[WalletController::class,'main'])->name('main');
+// Create wallet request
+Route::middleware(['auth', 'verified'])->post('wallet_request/create', [WalletController::class, 'request'])->name('wallet_request.create');
 
-    Route::get('active-peers', [WalletController::class,'index'] )->name('active-peers');
+// Chess presence API
+Route::middleware(['auth', 'verified'])
+     ->post('/chess-online-status', [PresenceController::class, 'chessOnline'])
+     ->name('api.chess-online-status')
+;
 
-    Route::get('deposit', function () {
-        return Inertia::render('Player/wallet/Deposit');
-    })->name('deposit');
-
-    Route::get('deposit/{id}', function ($id) {
-        return Inertia::render('Player/wallet/DepositDetails', ['id' => $id]);
-    })->name('deposit-details');
-
-    Route::get('withdrawal/{id}',[WithdrawalRequestController::class,'view'])->name('withdrawal-details');
-
-    Route::get('withdrawal-request/{id}', function () {
-        return Inertia::render('Player/wallet/WithdrawalRequest');
-    })->name('withdrawal-request');
-
-    Route::post('withdrawal/{id}/confirm', [WithdrawalRequestController::class, 'confirmReceipt'])
-        ->name('withdrawal-confirm');
-
-    Route::post('wallet/withdrawal/{id}/mark-sent', [WithdrawalRequestController::class, 'markAsSent'])
-        ->name('withdrawal-mark-sent');
-
-    Route::post('/wallet/buy-tokens', [WalletController::class, 'buyTokens'])->name('buy-tokens');
-
-});
-
-//Challenge actions
-Route::middleware(['auth', 'verified'])->prefix('challenges')->name('challenges.')->group(function () {
-    Route::post('/contend',[ChallengeController::class,'contend'])->name('contend');
-});
-
-//Wallet actions
-Route::middleware(['auth', 'verified'])->prefix('wallet_request')->name('wallet_request.')->group(function () {
-    Route::post('/create',[WalletController::class,'request'])->name('create');
-});
-
-
-Route::post('/chess-online-status', [PresenceController::class, 'chessOnline'])
-    ->name('api.chess-online-status')
-    ->middleware(['auth', 'verified']);
-
-
-
-
-
+// Broadcast channels
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

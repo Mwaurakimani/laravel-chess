@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Classes\Chess;
+namespace App\Classes\Chess\PlatformObjects;
 
 use Carbon\Carbon;
 use App\Models\User as UserModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
-use App\Classes\Chess\Game;
 
 /**
  * @property $chess_com_link
@@ -16,37 +15,37 @@ class User
     protected const BASE_URL = 'https://api.chess.com/pub';
 
     public string|null $avatar;
-    public int|null $playerId;
+    public int|null    $playerId;
     public string|null $apiId;            // corresponds to "@id"
     public string|null $url;
     public string|null $name;
     public string|null $username;
-    public int|null $followers;
+    public int|null    $followers;
     public string|null $countryUrl;
     public Carbon|null $lastOnline;
     public Carbon|null $joinedAt;
     public string|null $status;
-    public bool|null $isStreamer;
-    public bool|null $verified;
+    public bool|null   $isStreamer;
+    public bool|null   $verified;
     public string|null $league;
     /** @var string[] */
     public array $streamingPlatforms;
 
     private function __construct(array $data)
     {
-        $this->avatar = $data['avatar'] ?? null;
-        $this->playerId = $data['player_id'] ?? null;
-        $this->apiId = $data['@id'] ?? null;
-        $this->url = $data['url'] ?? null;
-        $this->username = $data['username'] ?? null;
-        $this->followers = $data['followers'] ?? null;
-        $this->countryUrl = $data['country'] ?? null;
-        $this->lastOnline = isset($data['last_online']) ? Carbon::createFromTimestamp($data['last_online']) : null;
-        $this->joinedAt = isset($data['joined']) ? Carbon::createFromTimestamp($data['joined']) : null;
-        $this->status = $data['status'] ?? null;
-        $this->isStreamer = isset($data['is_streamer']) ? (bool)$data['is_streamer'] : null;
-        $this->verified = isset($data['verified']) ? (bool)$data['verified'] : null;
-        $this->league = $data['league'] ?? null;
+        $this->avatar             = $data['avatar'] ?? null;
+        $this->playerId           = $data['player_id'] ?? null;
+        $this->apiId              = $data['@id'] ?? null;
+        $this->url                = $data['url'] ?? null;
+        $this->username           = $data['username'] ?? null;
+        $this->followers          = $data['followers'] ?? null;
+        $this->countryUrl         = $data['country'] ?? null;
+        $this->lastOnline         = isset($data['last_online']) ? Carbon::createFromTimestamp($data['last_online']) : null;
+        $this->joinedAt           = isset($data['joined']) ? Carbon::createFromTimestamp($data['joined']) : null;
+        $this->status             = $data['status'] ?? null;
+        $this->isStreamer         = isset($data['is_streamer']) ? (bool)$data['is_streamer'] : null;
+        $this->verified           = isset($data['verified']) ? (bool)$data['verified'] : null;
+        $this->league             = $data['league'] ?? null;
         $this->streamingPlatforms = $data['streaming_platforms'] ?? null;
     }
 
@@ -56,8 +55,8 @@ class User
      */
     public static function fromApiResponse(UserModel $user): self
     {
-        $path = '/player/' . $user->chess_com_link;
-        $url = self::BASE_URL . $path;
+        $path     = '/player/' . $user->chess_com_link;
+        $url      = self::BASE_URL . $path;
         $response = Http::get($url)->json();
         return new self($response);
     }
@@ -67,19 +66,19 @@ class User
      */
     public static function getArchives(UserModel $user): array
     {
-        $url = self::BASE_URL . "/player/{$user->chess_com_link}/games/archives";
+        $url      = self::BASE_URL . "/player/{$user->chess_com_link}/games/archives";
         $response = Http::get($url)->throw()->json();
-        $out = [];
+        $out      = [];
         foreach ($response['archives'] ?? [] as $archiveUrl) {
             if (!is_string($archiveUrl)) {
                 continue;
             }
-            $path = parse_url($archiveUrl, PHP_URL_PATH) ?: '';
+            $path     = parse_url($archiveUrl, PHP_URL_PATH) ?: '';
             $segments = explode('/', trim($path, '/'));
-            $n = count($segments);
+            $n        = count($segments);
             if ($n >= 2) {
                 $out[] = [
-                    'year' => (int)$segments[$n - 2],
+                    'year'  => (int)$segments[$n - 2],
                     'month' => (int)$segments[$n - 1],
                 ];
             }
@@ -93,24 +92,25 @@ class User
         ?int      $year = null,
         ?int      $month = null,
                   $start_date = null,   // "YYYY-MM-DD" or timestamp
-                  $end_date = null,   // "YYYY-MM-DD" or timestamp
+                  $end_date = null,     // "YYYY-MM-DD" or timestamp
                   $start_time = null,   // "HH:MM:SS"
                   $end_time = null    // "HH:MM:SS"
     ): Collection
     {
         // 1) Default to current year/month in UTC
-        $now = Carbon::now('UTC');
-        $year = $year ?? $now->year;
+        $now   = Carbon::now('UTC');
+        $year  = $year ?? $now->year;
         $month = $month ?? $now->month;
-        $mm = str_pad((string)$month, 2, '0', STR_PAD_LEFT);
+        $mm    = str_pad((string)$month, 2, '0', STR_PAD_LEFT);
 
         // 2) Fetch that month's games JSON
         $url = self::BASE_URL
-            . "/player/{$user->chess_com_link}/games/{$year}/{$mm}";
+               . "/player/{$user->chess_com_link}/games/{$year}/{$mm}";
         $raw = Http::timeout(10)
-            ->get($url)
-            ->throw()
-            ->json('games', []);
+                   ->get($url)
+                   ->throw()
+                   ->json('games', [])
+        ;
 
         return collect($raw)
             // 3) Hydrate into Game value objects
@@ -142,7 +142,7 @@ class User
                 }
 
                 // pull PGN tags
-                $tagDate = $g->tags['date'] ?? null; // "YYYY.MM.DD"
+                $tagDate  = $g->tags['date'] ?? null;       // "YYYY.MM.DD"
                 $tagStart = $g->tags['start_time'] ?? null; // "HH:MM:SS"
                 if (!$tagDate || !$tagStart) {
                     // no timestamp present
@@ -167,7 +167,8 @@ class User
 
                 return true;
             })
-            ->values();
+            ->values()
+        ;
     }
 
 

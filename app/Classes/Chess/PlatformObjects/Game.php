@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Classes\Chess;
+namespace App\Classes\Chess\PlatformObjects;
 
-use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
 class Game
