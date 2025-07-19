@@ -18,8 +18,8 @@ class ChessControllers extends Controller
     public function __construct()
     {
         $this->chessServiceProvider = new ChessComServiceProvider(
-            internalMode: true,
-            matchesPath:  'Requests/games.json'
+//            internalMode: false,
+//            matchesPath:  'Requests/games.json'
         );
     }
 
@@ -30,7 +30,6 @@ class ChessControllers extends Controller
             Carbon::parse($challenge->accepted_at)->format('/Y/m')
         )->getCloseMatch(
             challenge:    $challenge,
-            acceptedTime: '2025-07-12 13:47:22',
         );
 
         try {
@@ -60,6 +59,8 @@ class ChessControllers extends Controller
 
             // otherwise it's a brand-new record, so keep going:
             (new ChallengeController())->get_results($request, $challenge, $match);
+
+            return null;
 
         }
         catch (\Exception $e) {

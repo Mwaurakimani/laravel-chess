@@ -19,8 +19,8 @@ class ChallengeSeeder extends Seeder
     public function run(): void
     {
         try {
-//            $this->load_played_matches();
-            $this->load_played_users_test_matches();
+            $this->load_played_matches();
+//            $this->load_played_users_test_matches();
         } catch (\Exception $e) {
             logger()->error('ChallengeSeeder failed: ' . $e->getMessage());
             throw $e;
@@ -48,7 +48,7 @@ class ChallengeSeeder extends Seeder
             // 2) compute timestamps
             $start = Carbon::parse($match['start_time']);
             $createdAt = $start->copy()->subMinutes(20);
-            $acceptedAt = $createdAt->copy()->addMinutes(rand(3, 6));
+            $acceptedAt = $start->copy()->subMinutes(rand(1,3));
 
             // 3) stake & tokens
             $stake = rand(50, 300);
