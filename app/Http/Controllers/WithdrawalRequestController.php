@@ -105,8 +105,6 @@ class WithdrawalRequestController extends Controller
             ->with('success', 'Withdrawal confirmed and balances updated.');
     }
 
-
-
     public function markAsSent($id): RedirectResponse
     {
         $withdrawal = WithdrawalRequest::with('transaction')->findOrFail($id);
@@ -137,7 +135,5 @@ class WithdrawalRequestController extends Controller
 
         return redirect()->back()->with('success', 'Marked as sent.');
     }
-
-
 
 }

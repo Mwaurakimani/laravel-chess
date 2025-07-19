@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\System\Chess;
 
+use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\Controller;
 use App\Models\Challenge;
@@ -23,7 +24,7 @@ class ChessControllers extends Controller
         );
     }
 
-    public function getChallengeResult(Request $request, Challenge $challenge)
+    public function getChallengeResult(Request $request, Challenge $challenge): false|JsonResponse|string|null
     {
         $game = $this->chessServiceProvider->fetchArchivedGames(
             $challenge->user,
@@ -73,8 +74,3 @@ class ChessControllers extends Controller
         }
     }
 }
-
-//        $username = 'tevstark';
-//        $username = 'Jowey254';
-//        $username = 'mwaura_kimani';
-//        $username = 'akingvonfans';

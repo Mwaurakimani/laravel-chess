@@ -43,18 +43,14 @@ class ChallengeController extends Controller
                                  ->get()
         ;
 
-        return Inertia::render('Player/matches/MyChallenges', [
-            'challenges' => $myChallenges,
-        ]);
+        return Inertia::render('Player/matches/MyChallenges', ['challenges' => $myChallenges]);
     }
 
     public function show($id): Response
     {
         $challenge = Challenge::with(['user', 'opponent', 'platform'])->find($id);
 
-        return Inertia::render('Player/matches/ChallengeDetails', [
-            'challengeDetails' => $challenge
-        ]);
+        return Inertia::render('Player/matches/ChallengeDetails', ['challengeDetails' => $challenge]);
     }
 
     /**
@@ -62,23 +58,17 @@ class ChallengeController extends Controller
      */
     public function contend(Request $request): RedirectResponse
     {
-        $request->validate([
-                               'challenge_id' => 'required|exists:challenges,id',
-                           ]);
+        $request->validate(['challenge_id' => 'required|exists:challenges,id']);
 
         $user      = Auth::user();
         $challenge = Challenge::findOrFail($request->challenge_id);
 
         if ($challenge->user_id === $user->id) {
-            throw ValidationException::withMessages([
-                                                        'challenge_id' => 'You cannot accept your own challenge.'
-                                                    ]);
+            throw ValidationException::withMessages(['challenge_id' => 'You cannot accept your own challenge.']);
         }
 
         if ($challenge->request_state !== 'pending') {
-            throw ValidationException::withMessages([
-                                                        'challenge_id' => 'This challenge is no longer available.'
-                                                    ]);
+            throw ValidationException::withMessages(['challenge_id' => 'This challenge is no longer available.']);
         }
 
         // Balance checks...
@@ -90,17 +80,13 @@ class ChallengeController extends Controller
         $availableBalance = $user->balance - $lockedStake;
 
         if ($availableBalance < $challenge->stake) {
-            throw ValidationException::withMessages([
-                                                        'challenge_id' => 'Insufficient balance to accept this challenge.'
-                                                    ]);
+            throw ValidationException::withMessages(['challenge_id' => 'Insufficient balance to accept this challenge.']);
         }
 
         $requiredTokens = $challenge->tokens;
 
         if ($user->token_balance < $requiredTokens) {
-            throw ValidationException::withMessages([
-                                                        'challenge_id' => "You need at least {$requiredTokens} tokens to accept this challenge."
-                                                    ]);
+            throw ValidationException::withMessages(['challenge_id' => "You need at least {$requiredTokens} tokens to accept this challenge."]);
         }
 
         DB::transaction(function () use ($user, $challenge, $requiredTokens) {
@@ -188,9 +174,7 @@ class ChallengeController extends Controller
     {
         $validRoles = ['challenger', 'contender', 'draw'];
         if (!in_array($winnerRole, $validRoles)) {
-            throw ValidationException::withMessages([
-                                                        'winner' => 'Invalid winner role. Must be either challenger or contender.'
-                                                    ]);
+            throw ValidationException::withMessages(['winner' => 'Invalid winner role. Must be either challenger or contender.']);
         }
 
         $challenge = Challenge::with(['user', 'opponent'])
@@ -203,9 +187,7 @@ class ChallengeController extends Controller
         $contender  = $challenge->opponent;
 
         if (!$contender) {
-            throw ValidationException::withMessages([
-                                                        'challenge' => 'Challenge does not yet have an opponent.'
-                                                    ]);
+            throw ValidationException::withMessages(['challenge' => 'Challenge does not yet have an opponent.']);
         }
 
         // DRAW case: no money moves, just mark and notify
@@ -239,9 +221,7 @@ class ChallengeController extends Controller
                 app(NotificationsController::class)->store($drawNotif2);
             });
 
-            return response()->json([
-                                        'message' => "Match resolved as draw for challenge #{$challenge->id}; no balance changes."
-                                    ]);
+            return response()->json(['message' => "Match resolved as draw for challenge #{$challenge->id}; no balance changes."]);
         }
 
         $winner = $winnerRole === 'challenger' ? $challenger : $contender;
@@ -323,9 +303,7 @@ class ChallengeController extends Controller
             app(NotificationsController::class)->store($loseNotif);
         });
 
-        return response()->json([
-                                    'message' => "Match resolved: {$winnerRole} (user_id={$winner->id}) wins challenge #{$challenge->id}."
-                                ]);
+        return response()->json(['message' => "Match resolved: {$winnerRole} (user_id={$winner->id}) wins challenge #{$challenge->id}."]);
     }
 
     public function ready(Request $request, $id): Response
@@ -408,17 +386,13 @@ class ChallengeController extends Controller
         $availableBalance = $user->balance - $lockedStake;
 
         if ($availableBalance < $validated['stake']) {
-            throw ValidationException::withMessages([
-                                                        'stake' => 'Insufficient free balance to create this challenge.'
-                                                    ]);
+            throw ValidationException::withMessages(['stake' => 'Insufficient free balance to create this challenge.']);
         }
 
         // 3. Check token balance
         $requiredTokens = ceil($validated['stake'] / 10);
         if ($user->token_balance < $requiredTokens) {
-            throw ValidationException::withMessages([
-                                                        'stake' => "You need at least {$requiredTokens} tokens to create this challenge."
-                                                    ]);
+            throw ValidationException::withMessages(['stake' => "You need at least {$requiredTokens} tokens to create this challenge."]);
         }
 
         // 4. Resolve platform
@@ -554,65 +528,5 @@ class ChallengeController extends Controller
         $challenge->update(['challenge_status' => 'anomaly']);
         return redirect()->back();
     }
-
-//    private function holder()
-//    {
-//        // Only proceed if we haven’t already set a final status
-//        if (! in_array($challenge->challenge_status, ['won','loss','draw','anomaly'])) {
-//
-//            $challengerLink = strtolower($challenge->user->chess_com_link);
-//            $opponentLink   = strtolower($challenge->opponent->chess_com_link);
-//
-//            // --- 1) figure out which color actually won ---
-//            if ($match->white_result === 'win' && in_array($match->black_result, ['checkmated','timeout'])) {
-//                $winnerColor = 'white';
-//            }
-//            elseif ($match->black_result === 'win' && in_array($match->white_result, ['checkmated','timeout'])) {
-//                $winnerColor = 'black';
-//            }
-//            elseif ($match->white_result === 'stalemate' && $match->black_result === 'stalemate') {
-//                $winnerColor = 'draw';
-//            }
-//            else {
-//                // something unexpected — mark anomaly
-//                Log::error("Challenge #{$challenge->id} yielded unexpected results: "
-//                           . "{$match->white_result}/{$match->black_result}");
-//                $challenge->update(['challenge_status' => 'anomaly']);
-//                return redirect()->back();
-//            }
-//
-//            // --- 2) pick the actual winner username (or null on draw) ---
-//            if ($winnerColor === 'white') {
-//                $winnerUsername = strtolower($match->white);
-//            }
-//            elseif ($winnerColor === 'black') {
-//                $winnerUsername = strtolower($match->black);
-//            }
-//            else {
-//                $winnerUsername = null; // draw
-//            }
-//
-//            // --- 3) map that back to challenger vs opponent vs draw ---
-//            if ($winnerColor === 'draw') {
-//                $who = 'draw';
-//            }
-//            elseif ($winnerUsername === $challengerLink) {
-//                $who = 'challenger';
-//            }
-//            elseif ($winnerUsername === $opponentLink) {
-//                $who = 'contender';
-//            }
-//            else {
-//                // Neither link matches — anomaly
-//                Log::error("Challenge #{$challenge->id}: winning user '{$winnerUsername}' "
-//                           . "didn’t match challenger '{$challengerLink}' or opponent '{$opponentLink}'");
-//                $challenge->update(['challenge_status' => 'anomaly']);
-//                return redirect()->back();
-//            }
-//
-//            // --- 4) resolve stakes and mark status ---
-//            $this->resolveMatchAndTransferStake($request, $challenge, $who);
-//        }
-//    }
 
 }
