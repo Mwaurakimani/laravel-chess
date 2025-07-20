@@ -16,7 +16,7 @@ class ChessComServiceProvider
     protected bool   $internalMode = false;
     protected string $matchesPath;
     public ?array    $games        = null;
-    public int       $timeWindow   = 20;
+    public int       $timeWindow   = 60;
 
     public function __construct($internalMode = null, string $matchesPath = null)
     {
